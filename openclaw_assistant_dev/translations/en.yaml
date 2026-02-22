@@ -59,10 +59,15 @@ configuration:
     name: Enable OpenAI API
     description: Enable OpenAI-compatible Chat Completions endpoint. Allows using OpenClaw as a conversation agent in HA Assist pipeline via Extended OpenAI Conversation (HACS) or any OpenAI-compatible client.
   
-  allow_insecure_auth:
-    name: Allow Insecure HTTP Auth
-    description: Allow HTTP authentication for gateway access on LAN. WARNING - Only enable if using HTTP (not HTTPS) for gateway_public_url. Required for browser access over HTTP.
 
+
+  gateway_auth_mode:
+    name: Gateway Auth Mode
+    description: Gateway auth mode - token (default) or trusted-proxy (for HTTPS reverse proxies).
+
+  gateway_trusted_proxies:
+    name: Gateway Trusted Proxies
+    description: Comma-separated trusted proxy IP/CIDR list for trusted-proxy mode (example - 127.0.0.1,192.168.88.0/24).
   force_ipv4_dns:
     name: Force IPv4 DNS Order
     description: Force IPv4-first DNS ordering for Node network calls. Useful when IPv6 DNS resolves but IPv6 internet routing is broken (can affect Telegram API polling).

@@ -50,7 +50,8 @@ GATEWAY_MODE=$(jq -r '.gateway_mode // "local"' "$OPTIONS_FILE")
 GATEWAY_BIND_MODE=$(jq -r '.gateway_bind_mode // "loopback"' "$OPTIONS_FILE")
 GATEWAY_PORT=$(jq -r '.gateway_port // 18789' "$OPTIONS_FILE")
 ENABLE_OPENAI_API=$(jq -r '.enable_openai_api // false' "$OPTIONS_FILE")
-ALLOW_INSECURE_AUTH=$(jq -r '.allow_insecure_auth // false' "$OPTIONS_FILE")
+GATEWAY_AUTH_MODE=$(jq -r '.gateway_auth_mode // "token"' "$OPTIONS_FILE")
+GATEWAY_TRUSTED_PROXIES=$(jq -r '.gateway_trusted_proxies // empty' "$OPTIONS_FILE")
 FORCE_IPV4_DNS=$(jq -r '.force_ipv4_dns // false' "$OPTIONS_FILE")
 
 export TZ="$TZNAME"
@@ -353,7 +354,7 @@ fi
 
 if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
   if [ -f "$HELPER_PATH" ]; then
-    if ! python3 "$HELPER_PATH" apply-gateway-settings "$GATEWAY_MODE" "$GATEWAY_BIND_MODE" "$GATEWAY_PORT" "$ENABLE_OPENAI_API" "$ALLOW_INSECURE_AUTH"; then
+    if ! python3 "$HELPER_PATH" apply-gateway-settings "$GATEWAY_MODE" "$GATEWAY_BIND_MODE" "$GATEWAY_PORT" "$ENABLE_OPENAI_API" "$GATEWAY_AUTH_MODE" "$GATEWAY_TRUSTED_PROXIES"; then
       rc=$?
       echo "ERROR: Failed to apply gateway settings via oc_config_helper.py (exit code ${rc})."
       echo "ERROR: Gateway configuration may be incorrect; aborting startup."
