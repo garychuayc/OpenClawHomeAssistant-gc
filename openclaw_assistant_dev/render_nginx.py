@@ -5,7 +5,8 @@ Render nginx.conf and landing page HTML from templates.
 Called by run.sh with the following env vars:
   GW_PUBLIC_URL, GW_TOKEN, TERMINAL_PORT,
   ENABLE_HTTPS_PROXY, HTTPS_PROXY_PORT,
-  GATEWAY_INTERNAL_PORT, ACCESS_MODE
+  GATEWAY_INTERNAL_PORT, ACCESS_MODE,
+  DISK_TOTAL, DISK_USED, DISK_AVAIL, DISK_PCT
 """
 
 import os
@@ -23,6 +24,12 @@ def main():
     https_port = os.environ.get('HTTPS_PROXY_PORT', '')
     internal_gw_port = os.environ.get('GATEWAY_INTERNAL_PORT', '')
     access_mode = os.environ.get('ACCESS_MODE', 'custom')
+
+    # Disk usage info (collected by run.sh)
+    disk_total = os.environ.get('DISK_TOTAL', '')
+    disk_used = os.environ.get('DISK_USED', '')
+    disk_avail = os.environ.get('DISK_AVAIL', '')
+    disk_pct = os.environ.get('DISK_PCT', '')
 
     # Token comes from environment (best-effort CLI query in run.sh)
     token = os.environ.get('GW_TOKEN', '')
@@ -89,6 +96,10 @@ def main():
     landing = landing.replace('__GW_PUBLIC_URL_PATH__', gw_path)
     landing = landing.replace('__ACCESS_MODE__', access_mode)
     landing = landing.replace('__HTTPS_PORT__', https_port if enable_https else '')
+    landing = landing.replace('__DISK_TOTAL__', disk_total)
+    landing = landing.replace('__DISK_USED__', disk_used)
+    landing = landing.replace('__DISK_AVAIL__', disk_avail)
+    landing = landing.replace('__DISK_PCT__', disk_pct)
 
     out_dir = Path('/etc/nginx/html')
     out_dir.mkdir(parents=True, exist_ok=True)

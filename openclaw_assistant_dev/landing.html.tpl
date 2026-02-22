@@ -62,6 +62,10 @@
         <span class="icon">📡</span>
         <span>Access mode: <b>__ACCESS_MODE__</b></span>
       </div>
+      <div class="status-item" id="statusDisk">
+        <span class="icon" id="diskIcon">💾</span>
+        <span id="diskText">Disk: __DISK_USED__ / __DISK_TOTAL__ (__DISK_PCT__) — __DISK_AVAIL__ free</span>
+      </div>
     </div>
 
     <!-- ==================== ACTION BUTTONS ==================== -->
@@ -76,6 +80,13 @@
       <b>⚠️ Migration notice:</b> OpenClaw v2026.2.21+ requires HTTPS or localhost for Control UI.
       Plain HTTP LAN access no longer works. Switch <code>access_mode</code> to <b>lan_https</b>
       in add-on Configuration for one-click secure LAN access, then restart.
+    </div>
+
+    <!-- ==================== LOW DISK SPACE BANNER ==================== -->
+    <div class="banner warn hidden" id="diskBanner">
+      <b>⚠️ Low disk space:</b> <span id="diskBannerText"></span><br>
+      Add-on updates and Docker builds may fail. Open the terminal and run <code>oc-cleanup</code> to free space.
+      For Docker-level cleanup, open a <strong>host root shell</strong> (Advanced SSH add-on with Protection Mode off, or type <code>login</code> at the HAOS console) and run <code>docker image prune -a</code>.
     </div>
 
     <!-- ==================== ERROR BANNER (populated by JS) ==================== -->
@@ -145,6 +156,10 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
     const HTTPS_PORT = '__HTTPS_PORT__';
     const GW_PUBLIC_URL = '__GATEWAY_PUBLIC_URL__';
     const GW_TOKEN = '__GATEWAY_TOKEN__';
+    const DISK_PCT = '__DISK_PCT__';
+    const DISK_AVAIL = '__DISK_AVAIL__';
+    const DISK_USED = '__DISK_USED__';
+    const DISK_TOTAL = '__DISK_TOTAL__';
 
     const $ = id => document.getElementById(id);
 
@@ -212,6 +227,28 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
     // ---------- Migration banner ----------
     if (ACCESS_MODE === 'custom') {
       $('migrationBanner').classList.remove('hidden');
+    }
+
+    // ---------- Disk space monitoring ----------
+    if (DISK_PCT) {
+      const pctNum = parseInt(DISK_PCT, 10);
+      const diskIcon = $('diskIcon');
+      const statusDisk = $('statusDisk');
+      if (pctNum >= 90) {
+        diskIcon.textContent = '🔴';
+        statusDisk.style.borderColor = '#dc2626';
+        $('diskBanner').classList.remove('hidden');
+        $('diskBannerText').textContent =
+          `Disk is ${DISK_PCT} full (${DISK_AVAIL} free of ${DISK_TOTAL}).`;
+      } else if (pctNum >= 75) {
+        diskIcon.textContent = '🟡';
+        statusDisk.style.borderColor = '#d97706';
+        $('diskBanner').classList.remove('hidden');
+        $('diskBannerText').textContent =
+          `Disk is ${DISK_PCT} full (${DISK_AVAIL} free of ${DISK_TOTAL}). Consider cleaning up soon.`;
+      } else {
+        diskIcon.textContent = '🟢';
+      }
     }
 
     // ---------- CA certificate download ----------

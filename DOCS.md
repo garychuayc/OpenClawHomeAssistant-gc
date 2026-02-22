@@ -549,6 +549,26 @@ The add-on image includes these tools, available in the terminal:
 | Homebrew | `brew` | Package manager (optional — may not be available on all CPUs) |
 | Chromium | `chromium` | Headless browser for automation |
 | SSH | `ssh` | Remote access |
+| oc-cleanup | `oc-cleanup` | Interactive disk space monitor & cache cleanup helper |
+
+### oc-cleanup
+
+Run `oc-cleanup` from the add-on terminal to see an overview of disk usage and
+selectively clear caches that accumulate over time:
+
+```
+$ oc-cleanup
+```
+
+The tool displays:
+
+- **Disk usage** — total, used, available, and percentage for the overlay filesystem.
+- **Cache sizes** — npm global cache, pnpm content store, OpenClaw data, Homebrew cellar, workspace, Python `__pycache__`, and `/tmp`.
+- **Cleanup menu** — choose which caches to purge (npm, pnpm, pycache, tmp, all at once).
+
+> **Note:** The add-on cannot prune Docker images directly. If disk space is
+> critically low due to old Docker layers, SSH into the host and run
+> `docker image prune -a` or `docker system prune`.
 
 ---
 
@@ -728,6 +748,40 @@ rm /config/.openclaw/openclaw.json
 ```
 
 Restart the add-on — it will generate a fresh config. You'll need to run `openclaw onboard` again.
+
+### Disk space running low / "no space left on device"
+
+**Symptom**: Build or startup fails, or the landing page shows a red disk-usage indicator.
+
+**Cause**: Old Docker images and container layers accumulate on the host. Each add-on rebuild (~1–2 GB) keeps the previous image until pruned.
+
+**Fix (from inside the add-on)**:
+1. Open the terminal and run `oc-cleanup` to clear npm/pnpm caches, pycache, and temp files.
+
+**Fix (from the host)** — you need a **root shell on the HAOS host**, not the `ha` CLI
+(the `ha docker` command does **not** support `prune`):
+
+*Option A — Advanced SSH & Web Terminal add-on (easiest):*
+1. Install the **Advanced SSH & Web Terminal** add-on from the HA store.
+2. In its Configuration, **disable Protection Mode** (required for host-level access).
+3. Open the terminal and run:
+   ```sh
+   docker image prune -a       # remove all unused images
+   docker builder prune -a      # remove build cache
+   ```
+
+*Option B — HAOS debug console (VirtualBox / physical):*
+1. On the HAOS console (keyboard/VirtualBox window), type `login` to get a root shell.
+2. Run the same `docker image prune -a` and `docker builder prune -a` commands.
+
+> **Note:** The `ha docker` CLI (shown by `ha docker --help`) only exposes `info`,
+> `options`, and `registries` — it cannot prune images. You must use the raw `docker`
+> command from a host root shell.
+
+**Prevention**: If running HAOS in VirtualBox, resize the VDI to at least 64 GB:
+```
+VBoxManage modifymedium disk haos.vdi --resize 64000
+```
 
 ---
 

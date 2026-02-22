@@ -554,9 +554,28 @@ fi
 # The gateway token is NOT managed by the add-on; OpenClaw will generate/store it.
 # Best-effort: query it via CLI (works even if openclaw.json is JSON5). If unknown, we hide the button.
 GW_TOKEN="$(timeout 2s openclaw config get gateway.auth.token 2>/dev/null | tr -d '\n' || true)"
+
+# Collect disk usage for landing page status card
+DISK_TOTAL="" DISK_USED="" DISK_AVAIL="" DISK_PCT=""
+if df -h /config >/dev/null 2>&1; then
+  DISK_TOTAL=$(df -h /config | awk 'NR==2{print $2}')
+  DISK_USED=$(df -h /config | awk 'NR==2{print $3}')
+  DISK_AVAIL=$(df -h /config | awk 'NR==2{print $4}')
+  DISK_PCT=$(df -h /config | awk 'NR==2{print $5}')
+  echo "INFO: Disk usage: ${DISK_USED}/${DISK_TOTAL} (${DISK_PCT} used, ${DISK_AVAIL} free)"
+  # Warn early if disk is getting full
+  DISK_PCT_NUM=${DISK_PCT//%/}
+  if [ "$DISK_PCT_NUM" -ge 90 ] 2>/dev/null; then
+    echo "WARNING: Disk is ${DISK_PCT} full! Add-on updates may fail. Run 'oc-cleanup' in the terminal."
+  elif [ "$DISK_PCT_NUM" -ge 75 ] 2>/dev/null; then
+    echo "NOTICE: Disk is ${DISK_PCT} full. Consider running 'oc-cleanup' in the terminal."
+  fi
+fi
+
 GW_PUBLIC_URL="$GW_PUBLIC_URL" GW_TOKEN="$GW_TOKEN" TERMINAL_PORT="$TERMINAL_PORT" \
   ENABLE_HTTPS_PROXY="$ENABLE_HTTPS_PROXY" HTTPS_PROXY_PORT="$GATEWAY_PORT" \
   GATEWAY_INTERNAL_PORT="$GATEWAY_INTERNAL_PORT" ACCESS_MODE="$ACCESS_MODE" \
+  DISK_TOTAL="$DISK_TOTAL" DISK_USED="$DISK_USED" DISK_AVAIL="$DISK_AVAIL" DISK_PCT="$DISK_PCT" \
   python3 /render_nginx.py
 
 echo "Starting ingress proxy (nginx) on :48099 ..."

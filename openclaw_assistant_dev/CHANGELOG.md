@@ -2,6 +2,14 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.78] - 2026-02-23
+
+### Added
+- **Disk-space monitoring on the landing page** — shows total / used / available with colour-coded indicator (🟢 / 🟡 / 🔴).
+- **Low-disk warning banner** appears automatically when usage exceeds 90 %.
+- **`oc-cleanup` terminal command** — interactive helper that shows cache sizes (npm, pnpm, OpenClaw, Homebrew, pycache, tmp) and lets users reclaim space with a menu-driven cleanup.
+- Startup disk-space check with log warnings when the overlay is above 75 % or 90 %.
+
 ## [0.5.77] - 2026-02-23
 
 ### Added
