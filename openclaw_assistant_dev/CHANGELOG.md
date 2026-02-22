@@ -2,6 +2,15 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.75] - 2026-02-22
+
+### Changed
+- Removed add-on option `allow_insecure_auth` (upstream Control UI now requires secure context/device identity).
+- Added `gateway_auth_mode` option (`token` or `trusted-proxy`).
+- Added `gateway_trusted_proxies` option (comma-separated IP/CIDR list).
+- Startup config apply now writes `gateway.auth.mode` and `gateway.trustedProxies`.
+- Updated docs/translations for HTTPS + reverse-proxy configuration.
+
 ## [0.5.74] - 2026-02-22
 
 ### Added

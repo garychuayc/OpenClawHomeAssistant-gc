@@ -148,7 +148,8 @@ Enable LAN access via the add-on configuration:
 2. Set:
    - `gateway_bind_mode`: **lan**
    - `gateway_port`: **18789** (or your preferred port)
-   - `allow_insecure_auth`: **true** (required for HTTP — see below)
+   - `gateway_auth_mode`: **trusted-proxy**
+   - `gateway_trusted_proxies`: **127.0.0.1,192.168.88.0/24** (adjust to your proxy source)
    - `gateway_public_url`: `http://<your-ha-ip>:18789`
 3. Restart the add-on
 
@@ -160,7 +161,7 @@ Forward the gateway port from your HA host to your local machine:
 ssh -L 18789:127.0.0.1:18789 your-user@your-ha-ip
 ```
 
-Then open `http://localhost:18789` in your browser. No need to change `gateway_bind_mode` or `allow_insecure_auth`.
+Then open `http://localhost:18789` in your browser. No need to change gateway auth mode for local loopback access.
 
 ### Browser security: "requires HTTPS or localhost"
 
@@ -171,7 +172,7 @@ Modern browsers block certain features on plain HTTP (non-localhost). If you see
 **Solutions** (pick one):
 - **Use HTTPS** (Method A above) — best long-term
 - **Use SSH port forwarding** (Method C above) — `localhost` counts as secure
-- **Enable `allow_insecure_auth`** — quick workaround for LAN HTTP access
+- Use **HTTPS** (recommended) or localhost for Control UI device identity flows
 
 ### Unauthorized error
 
@@ -202,7 +203,8 @@ All options are set via **Settings → Apps/Add-ons → OpenClaw Assistant → C
 | `gateway_port` | int | `18789` | Port for the gateway. Only applies when `gateway_mode` is `local` |
 | `gateway_public_url` | string | _(empty)_ | Public URL for the "Open Gateway Web UI" button. Example: `http://192.168.1.119:18789` |
 | `enable_openai_api` | bool | `false` | Enable the OpenAI-compatible `/v1/chat/completions` endpoint. Required for [Assist pipeline integration](#6c-assist-pipeline-integration-openai-api) |
-| `allow_insecure_auth` | bool | `false` | Allow HTTP (non-HTTPS) authentication on LAN. **Required** for browser access over plain HTTP |
+| `gateway_auth_mode` | `token` / `trusted-proxy` | `token` | Gateway auth mode. Use `trusted-proxy` when terminating HTTPS in a reverse proxy and forwarding trusted auth headers. |
+| `gateway_trusted_proxies` | string | _(empty)_ | Comma-separated trusted proxy IP/CIDR list used with `gateway_auth_mode: trusted-proxy`. |
 | `force_ipv4_dns` | bool | `false` | Force IPv4-first DNS ordering for Node network calls. Useful if IPv6 DNS resolves but IPv6 egress is broken (can affect Telegram API polling). |
 
 ### Terminal
@@ -253,13 +255,14 @@ This is the most common setup — accessing the Gateway Web UI from a browser on
 |---|---|
 | `gateway_bind_mode` | **lan** |
 | `gateway_port` | **18789** |
-| `allow_insecure_auth` | **true** |
+| `gateway_auth_mode` | **trusted-proxy** |
+| `gateway_trusted_proxies` | **127.0.0.1,192.168.88.0/24** |
 | `gateway_public_url` | `http://<your-ha-ip>:18789` |
 
 3. Restart the add-on
 4. Open the **Open Gateway Web UI** button — it should now work from any device on your LAN
 
-**Security note**: `allow_insecure_auth` allows authentication over plain HTTP. This is fine on a trusted home network but should not be used over the internet. For public access, use HTTPS.
+**Security note**: prefer HTTPS for Control UI access. For reverse-proxy setups, use `gateway_auth_mode: trusted-proxy` with a strict `gateway_trusted_proxies` allowlist.
 
 ### 6b. Remote Gateway Mode
 
