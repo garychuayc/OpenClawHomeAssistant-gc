@@ -2,6 +2,11 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.84] - 2026-02-23
+
+### Fixed
+- Fix `gateway_env_vars` crash on first variable export — `((env_count++))` returns exit code 1 when count is 0 under `set -e`, killing the startup script.
+
 ## [0.5.83] - 2026-02-23
 
 ### Added
