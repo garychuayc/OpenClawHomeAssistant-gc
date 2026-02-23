@@ -466,10 +466,13 @@ SANEOF
   echo "INFO: CA certificate available for download at /cert/ca.crt on the HTTPS port"
 
   # ------------------------------------------------------------------
-  # Tell OpenClaw to accept the HTTPS proxy origin in its Control UI.
-  # Without this, v2026.2.21+ rejects the WebSocket with error 1008:
-  # "origin not allowed (open the Control UI from the gateway host
-  #  or allow it in gateway.controlUi.allowedOrigins)"
+  # Tell OpenClaw to accept the HTTPS proxy origin in its Control UI
+  # and skip interactive pairing (token auth is sufficient).
+  #
+  # Without allowedOrigins, v2026.2.21+ rejects with error 1008:
+  #   "origin not allowed"
+  # Without pairingMode=open, it rejects with error 1008:
+  #   "pairing required"
   # ------------------------------------------------------------------
   if [ -n "$LAN_IP" ] && [ -f "$HELPER_PATH" ] && [ -f "$OPENCLAW_CONFIG_PATH" ]; then
     ALLOWED_ORIGINS="https://${LAN_IP}:${GATEWAY_PORT}"
@@ -477,7 +480,7 @@ SANEOF
     ALLOWED_ORIGINS="${ALLOWED_ORIGINS},https://homeassistant.local:${GATEWAY_PORT}"
     ALLOWED_ORIGINS="${ALLOWED_ORIGINS},https://homeassistant:${GATEWAY_PORT}"
     python3 "$HELPER_PATH" set-control-ui-origins "$ALLOWED_ORIGINS" || \
-      echo "WARN: Could not set controlUi.allowedOrigins — gateway may reject the Control UI origin"
+      echo "WARN: Could not set controlUi settings — gateway may reject the Control UI"
   fi
 fi
 

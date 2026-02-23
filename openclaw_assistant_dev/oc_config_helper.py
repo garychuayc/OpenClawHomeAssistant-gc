@@ -172,11 +172,14 @@ def apply_gateway_settings(mode: str, bind_mode: str, port: int, enable_openai_a
 
 def set_control_ui_origins(origins_csv: str):
     """
-    Set gateway.controlUi.allowedOrigins in the config.
+    Set gateway.controlUi.allowedOrigins and pairingMode in the config.
 
     OpenClaw v2026.2.21+ rejects WebSocket connections from origins not in
     this list.  When the built-in HTTPS proxy is used (lan_https), the
     browser's origin (e.g. https://192.168.1.10:18789) must be listed here.
+
+    Also sets pairingMode to 'open' so that providing a valid gateway token
+    is sufficient — no interactive pairing handshake is required.
 
     Args:
         origins_csv: Comma-separated list of allowed origins.
@@ -194,15 +197,27 @@ def set_control_ui_origins(origins_csv: str):
         gateway["controlUi"] = {}
 
     origins = [o.strip() for o in origins_csv.split(",") if o.strip()]
+    changes = []
 
-    current = gateway["controlUi"].get("allowedOrigins", [])
-    if current == origins:
-        print(f"INFO: controlUi.allowedOrigins already correct: {origins}")
+    current_origins = gateway["controlUi"].get("allowedOrigins", [])
+    if current_origins != origins:
+        gateway["controlUi"]["allowedOrigins"] = origins
+        changes.append(f"allowedOrigins: {current_origins} -> {origins}")
+
+    # pairingMode: "open" means any client with a valid token can connect
+    # without an interactive pairing ceremony.  Other values ("pin", etc.)
+    # require the user to confirm on the host first.
+    current_pairing = gateway["controlUi"].get("pairingMode")
+    if current_pairing != "open":
+        gateway["controlUi"]["pairingMode"] = "open"
+        changes.append(f"pairingMode: {current_pairing} -> open")
+
+    if not changes:
+        print(f"INFO: controlUi settings already correct: origins={origins}, pairingMode=open")
         return True
 
-    gateway["controlUi"]["allowedOrigins"] = origins
     if write_config(cfg):
-        print(f"INFO: Updated controlUi.allowedOrigins: {current} -> {origins}")
+        print(f"INFO: Updated controlUi: {', '.join(changes)}")
         return True
     print("ERROR: Failed to write config")
     return False

@@ -685,6 +685,33 @@ Go to **Settings → Add-ons → OpenClaw Assistant → Log** tab. Logs show sta
    openclaw gateway restart
    ```
 
+### "disconnected (1008): pairing required"
+
+**Symptom**: Gateway UI loads over HTTPS but shows `pairing required` and the status is Offline.
+
+**Cause**: OpenClaw v2026.2.21+ requires the Control UI to complete a pairing handshake before the WebSocket is accepted. By default, new clients must be explicitly paired.
+
+**Fix**: In **v0.5.78+** the add-on automatically sets `gateway.controlUi.pairingMode: open` on startup when using `lan_https` mode. This means any client with a valid gateway token can connect without interactive pairing.
+
+1. **Restart the add-on** — the startup script writes the pairing config before launching the gateway.
+2. If the error persists, set it manually from the terminal:
+   ```sh
+   python3 /oc_config_helper.py set-control-ui-origins ""
+   ```
+   Or edit the config directly:
+   ```sh
+   # Open the config file
+   nano /config/.openclaw/openclaw.json
+   ```
+   Ensure `gateway.controlUi` contains:
+   ```json
+   "controlUi": {
+     "pairingMode": "open",
+     "allowedOrigins": ["https://YOUR_IP:18789"]
+   }
+   ```
+   Then restart the gateway: `openclaw gateway restart`
+
 ### Gateway UI shows "Unauthorized"
 
 **Fix**: Get the correct token and use it:

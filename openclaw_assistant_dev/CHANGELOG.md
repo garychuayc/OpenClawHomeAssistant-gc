@@ -2,6 +2,12 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.80] - 2026-02-23
+
+- **`lan_https` — error 1008 "pairing required"**: auto-set `gateway.controlUi.pairingMode: open` so token-authenticated clients can connect without interactive pairing.
+- Landing page error translation now covers "pairing required" and "origin not allowed" errors with mode-specific fix guidance.
+- Dropdown translations for `access_mode`, `gateway_mode`, `gateway_bind_mode`, and `gateway_auth_mode` now show human-readable labels in all 6 languages.
+
 ## [0.5.79] - 2026-02-23
 
 ### Fixed

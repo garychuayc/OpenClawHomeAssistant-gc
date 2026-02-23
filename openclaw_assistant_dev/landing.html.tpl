@@ -207,9 +207,21 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
         friendly: 'The browser is not in a secure context. HTTPS or localhost is required.',
         fix: 'Use the HTTPS URL provided by the add-on, or set up a reverse proxy with TLS.'
       },
+      'pairing required': {
+        friendly: 'The Gateway requires pairing before the Control UI can connect.',
+        fix: ACCESS_MODE === 'lan_https'
+          ? 'Restart the add-on — it auto-configures <code>controlUi.pairingMode: open</code> so token auth is enough. If the error persists, check the add-on logs for warnings.'
+          : 'Set <code>access_mode</code> to <b>lan_https</b> and restart, or manually set <code>gateway.controlUi.pairingMode</code> to <code>open</code> via the terminal: <code>openclaw config set gateway.controlUi.pairingMode open</code>'
+      },
+      'origin not allowed': {
+        friendly: 'The Gateway rejected the browser origin. The Control UI URL is not in the allow-list.',
+        fix: ACCESS_MODE === 'lan_https'
+          ? 'Restart the add-on — it auto-adds HTTPS origins to <code>controlUi.allowedOrigins</code>. If you changed your LAN IP, a restart regenerates the config.'
+          : 'Manually add your origin: <code>openclaw config set gateway.controlUi.allowedOrigins \'["https://YOUR_IP:18789"]\' </code>'
+      },
       '1008': {
-        friendly: 'WebSocket disconnected (1008): device identity check failed.',
-        fix: 'Ensure you are connecting over HTTPS. The Control UI no longer accepts plain HTTP connections.'
+        friendly: 'WebSocket disconnected (1008).',
+        fix: 'Ensure you are connecting over HTTPS. Check the add-on logs for the specific sub-error (device identity / origin / pairing).'
       }
     };
 
