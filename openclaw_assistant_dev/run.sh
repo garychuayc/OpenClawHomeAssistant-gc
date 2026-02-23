@@ -139,7 +139,7 @@ export OPENCLAW_CONFIG_DIR=/config/.openclaw
 export OPENCLAW_WORKSPACE_DIR=/config/clawd
 export XDG_CONFIG_HOME=/config
 
-mkdir -p /config/.openclaw /config/clawd /config/keys /config/secrets
+mkdir -p /config/.openclaw /config/.openclaw/identity /config/clawd /config/keys /config/secrets
 
 # ------------------------------------------------------------------------------
 # Sync built-in OpenClaw skills from image to persistent storage
@@ -466,13 +466,22 @@ SANEOF
   echo "INFO: CA certificate available for download at /cert/ca.crt on the HTTPS port"
 
   # ------------------------------------------------------------------
-  # Tell OpenClaw to accept the HTTPS proxy origin in its Control UI
-  # and skip interactive pairing (token auth is sufficient).
+  # Configure gateway.controlUi for the HTTPS proxy:
   #
-  # Without allowedOrigins, v2026.2.21+ rejects with error 1008:
-  #   "origin not allowed"
-  # Without pairingMode=open, it rejects with error 1008:
-  #   "pairing required"
+  # 1. allowedOrigins — the browser's HTTPS origin must be listed,
+  #    otherwise v2026.2.21+ rejects with 1008 "origin not allowed".
+  #
+  # 2. dangerouslyDisableDeviceAuth — skips the interactive device
+  #    pairing ceremony (1008 "pairing required").  In a self-hosted
+  #    add-on the user already controls the token, so per-device
+  #    approval adds friction without real security benefit.
+  #
+  #    NOTE: v2026.2.22+ emits a startup security warning when this
+  #    flag is active. The warning is expected and harmless for this
+  #    use case — run `openclaw security audit` for details.
+  #
+  # Also cleans up any stale keys (e.g. pairingMode) from older
+  # add-on versions that would cause "Unrecognized key" errors.
   # ------------------------------------------------------------------
   if [ -n "$LAN_IP" ] && [ -f "$HELPER_PATH" ] && [ -f "$OPENCLAW_CONFIG_PATH" ]; then
     ALLOWED_ORIGINS="https://${LAN_IP}:${GATEWAY_PORT}"

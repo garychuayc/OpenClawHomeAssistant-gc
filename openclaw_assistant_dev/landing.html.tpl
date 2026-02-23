@@ -208,10 +208,10 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
         fix: 'Use the HTTPS URL provided by the add-on, or set up a reverse proxy with TLS.'
       },
       'pairing required': {
-        friendly: 'The Gateway requires pairing before the Control UI can connect.',
+        friendly: 'The Gateway requires device pairing before the Control UI can connect.',
         fix: ACCESS_MODE === 'lan_https'
-          ? 'Restart the add-on — it auto-configures <code>controlUi.pairingMode: open</code> so token auth is enough. If the error persists, check the add-on logs for warnings.'
-          : 'Set <code>access_mode</code> to <b>lan_https</b> and restart, or manually set <code>gateway.controlUi.pairingMode</code> to <code>open</code> via the terminal: <code>openclaw config set gateway.controlUi.pairingMode open</code>'
+          ? 'Restart the add-on — it auto-sets <code>controlUi.dangerouslyDisableDeviceAuth: true</code> to skip pairing (token auth is still enforced). <br><small>Note: v2026.2.22+ shows an <em>expected</em> security warning for this flag in the gateway logs — it is safe to ignore.</small>'
+          : 'Set <code>access_mode</code> to <b>lan_https</b> and restart. Or from the terminal: edit <code>/config/.openclaw/openclaw.json</code> and set <code>gateway.controlUi.dangerouslyDisableDeviceAuth: true</code>, then restart the gateway.'
       },
       'origin not allowed': {
         friendly: 'The Gateway rejected the browser origin. The Control UI URL is not in the allow-list.',

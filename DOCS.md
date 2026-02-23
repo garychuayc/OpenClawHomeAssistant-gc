@@ -121,6 +121,8 @@ Save this token — you'll need it to access the Gateway Web UI and for API inte
 The Gateway Web UI (Control UI) is OpenClaw's main web interface. It opens in a **separate browser tab** because Home Assistant's Ingress proxy has WebSocket limitations.
 
 > **Important (v2026.2.21+):** OpenClaw now requires a **secure context** (HTTPS or localhost) for the Control UI. Plain HTTP over LAN is no longer accepted. The add-on's `access_mode` option makes this easy — see below.
+>
+> **v2026.2.22 note:** The gateway now emits a startup security warning when `dangerouslyDisableDeviceAuth` is active (used by `lan_https` mode). This warning is **expected and safe to ignore** — token authentication is still enforced.
 
 ### Choosing an access mode
 
@@ -239,7 +241,7 @@ All options are set via **Settings → Apps/Add-ons → OpenClaw Assistant → C
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `gateway_mode` | `local` / `remote` | `local` | **local**: run gateway in this add-on. **remote**: connect to an external gateway |
-| `gateway_bind_mode` | `auto` / `loopback` / `lan` / `tailnet` | `loopback` | **loopback**: 127.0.0.1 only (secure). **lan**: all interfaces (LAN-accessible). **tailnet**: Tailscale interface only. **auto**: let OpenClaw choose bind behavior. Only applies when `gateway_mode` is `local` |
+| `gateway_bind_mode` | `loopback` / `lan` / `tailnet` | `loopback` | **loopback**: 127.0.0.1 only (secure). **lan**: all interfaces (LAN-accessible). **tailnet**: Tailscale interface only. Only applies when `gateway_mode` is `local` |
 | `gateway_port` | int | `18789` | Port for the gateway. Only applies when `gateway_mode` is `local` |
 | `access_mode` | `custom` / `local_only` / `lan_https` / `lan_reverse_proxy` / `tailnet_https` | `custom` | **Simplifies secure access setup.** `custom`: use individual settings (backward-compatible). `lan_https`: built-in HTTPS proxy for LAN (recommended for phones). `lan_reverse_proxy`: external reverse proxy. `tailnet_https`: Tailscale. `local_only`: Ingress only. See [Accessing the Gateway Web UI](#4-accessing-the-gateway-web-ui) |
 | `gateway_public_url` | string | _(empty)_ | Public URL for the "Open Gateway Web UI" button. Auto-constructed in `lan_https` mode if empty. Example: `https://192.168.1.119:18789` |
@@ -660,7 +662,7 @@ Go to **Settings → Add-ons → OpenClaw Assistant → Log** tab. Logs show sta
 
 **Symptom**: Gateway UI shows error 1008 or "requires secure context / device identity".
 
-**Cause**: OpenClaw v2026.2.21+ requires HTTPS or localhost. Plain HTTP over LAN is blocked.
+**Cause**: OpenClaw v2026.2.21+ requires HTTPS or localhost. Plain HTTP over LAN is blocked. (v2026.2.22 further hardens this by defaulting remote onboarding to `wss://` and rejecting insecure non-loopback targets.)
 
 **Fix** (pick one):
 1. **Easiest**: Set `access_mode` to **lan_https** in add-on Configuration → restart. This adds a built-in HTTPS proxy with zero external setup.
@@ -689,28 +691,30 @@ Go to **Settings → Add-ons → OpenClaw Assistant → Log** tab. Logs show sta
 
 **Symptom**: Gateway UI loads over HTTPS but shows `pairing required` and the status is Offline.
 
-**Cause**: OpenClaw v2026.2.21+ requires the Control UI to complete a pairing handshake before the WebSocket is accepted. By default, new clients must be explicitly paired.
+**Cause**: OpenClaw v2026.2.21+ requires new devices to complete a pairing handshake before the Control UI WebSocket is accepted. Loopback connections are auto-approved (v2026.2.22 further improves this with loopback scope-upgrade auto-approval), but LAN connections (including those through the HTTPS proxy) require explicit approval.
 
-**Fix**: In **v0.5.78+** the add-on automatically sets `gateway.controlUi.pairingMode: open` on startup when using `lan_https` mode. This means any client with a valid gateway token can connect without interactive pairing.
+**Fix**: In **v0.5.80+** the add-on automatically sets `gateway.controlUi.dangerouslyDisableDeviceAuth: true` on startup when using `lan_https` mode. This bypasses per-device pairing — token authentication is still enforced.
 
-1. **Restart the add-on** — the startup script writes the pairing config before launching the gateway.
-2. If the error persists, set it manually from the terminal:
+> **v2026.2.22 note:** The gateway now logs a security warning on startup when this flag is active. The warning is expected and harmless — run `openclaw security audit` for details.
+
+1. **Restart the add-on** — the startup script writes the config before launching the gateway.
+2. If the error persists, set it manually:
    ```sh
-   python3 /oc_config_helper.py set-control-ui-origins ""
-   ```
-   Or edit the config directly:
-   ```sh
-   # Open the config file
    nano /config/.openclaw/openclaw.json
    ```
    Ensure `gateway.controlUi` contains:
    ```json
    "controlUi": {
-     "pairingMode": "open",
+     "dangerouslyDisableDeviceAuth": true,
      "allowedOrigins": ["https://YOUR_IP:18789"]
    }
    ```
    Then restart the gateway: `openclaw gateway restart`
+3. Alternatively, approve devices individually without disabling auth:
+   ```sh
+   openclaw devices list       # show pending pairing requests
+   openclaw devices approve <requestId>
+   ```
 
 ### Gateway UI shows "Unauthorized"
 

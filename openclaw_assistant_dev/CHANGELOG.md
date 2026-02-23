@@ -2,10 +2,26 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.81] - 2026-02-23
+
+### Changed
+- **Upgraded OpenClaw to v2026.2.22-2** — includes major gateway/auth/pairing fixes and security hardening.
+- Precreate `$OPENCLAW_CONFIG_DIR/identity` on startup to prevent `EACCES` errors on CLI commands that need device identity.
+
+### Notes — v2026.2.22 impact on this add-on
+- **Pairing fixes (loopback)**: v2026.2.22 auto-approves loopback scope-upgrade pairing requests, includes `operator.read`/`operator.write` in default scope bundles, and treats `operator.admin` as satisfying other scopes. This greatly improves `local_only` mode reliability.
+- **`dangerouslyDisableDeviceAuth` security warning**: v2026.2.22 now emits a startup warning when this flag is active. The warning is **expected and harmless** for `lan_https` mode — the flag is still required because LAN browser connections through the HTTPS proxy are not considered loopback by the gateway. Token auth remains enforced.
+- **Removed `food-order` skill**: no longer bundled; install from ClawHub if needed.
+- **Gateway lock improvements**: stale-lock detection now uses port reachability, reducing false "already running" errors after unclean restarts.
+- **Log file size cap**: new `logging.maxFileBytes` default (500 MB) prevents disk exhaustion from log storms.
+- **`wss://` default for remote onboarding**: validates our HTTPS proxy approach as the correct direction.
+
 ## [0.5.80] - 2026-02-23
 
-- **`lan_https` — error 1008 "pairing required"**: auto-set `gateway.controlUi.pairingMode: open` so token-authenticated clients can connect without interactive pairing.
-- Landing page error translation now covers "pairing required" and "origin not allowed" errors with mode-specific fix guidance.
+### Fixed
+- **`lan_https` — error 1008 "pairing required"**: auto-set `gateway.controlUi.dangerouslyDisableDeviceAuth: true` to skip interactive device pairing (token auth remains enforced). Replaces the invalid `pairingMode` key that caused `Unrecognized key` config errors.
+- Config helper now removes stale/invalid keys (e.g. `pairingMode`) from `controlUi` on startup.
+- Landing page error translation now covers "pairing required" and "origin not allowed" errors with correct fix guidance.
 - Dropdown translations for `access_mode`, `gateway_mode`, `gateway_bind_mode`, and `gateway_auth_mode` now show human-readable labels in all 6 languages.
 
 ## [0.5.79] - 2026-02-23

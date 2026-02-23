@@ -63,7 +63,7 @@ def apply_gateway_settings(mode: str, bind_mode: str, port: int, enable_openai_a
     
     Args:
         mode: "local" or "remote"
-        bind_mode: "auto", "loopback", "lan", or "tailnet"
+        bind_mode: "loopback", "lan", or "tailnet"
         port: Port number to listen on (must be 1-65535)
         enable_openai_api: Enable OpenAI-compatible Chat Completions endpoint
         auth_mode: Gateway auth mode (token|trusted-proxy)
@@ -75,8 +75,8 @@ def apply_gateway_settings(mode: str, bind_mode: str, port: int, enable_openai_a
         return False
     
     # Validate bind mode
-    if bind_mode not in ["auto", "loopback", "lan", "tailnet"]:
-        print(f"ERROR: Invalid bind_mode '{bind_mode}'. Must be 'auto', 'loopback', 'lan', or 'tailnet'")
+    if bind_mode not in ["loopback", "lan", "tailnet"]:
+        print(f"ERROR: Invalid bind_mode '{bind_mode}'. Must be 'loopback', 'lan', or 'tailnet'")
         return False
     
     # Validate port range
@@ -172,14 +172,18 @@ def apply_gateway_settings(mode: str, bind_mode: str, port: int, enable_openai_a
 
 def set_control_ui_origins(origins_csv: str):
     """
-    Set gateway.controlUi.allowedOrigins and pairingMode in the config.
+    Configure gateway.controlUi for the built-in HTTPS proxy.
 
-    OpenClaw v2026.2.21+ rejects WebSocket connections from origins not in
-    this list.  When the built-in HTTPS proxy is used (lan_https), the
-    browser's origin (e.g. https://192.168.1.10:18789) must be listed here.
+    Sets:
+      - allowedOrigins: the HTTPS proxy origins so the browser WebSocket
+        is accepted (required since v2026.2.21).
+      - dangerouslyDisableDeviceAuth: true — skips the interactive device
+        pairing ceremony.  In a self-hosted HA add-on the user already
+        controls the gateway token, so the pairing step adds friction
+        without meaningful security benefit.
 
-    Also sets pairingMode to 'open' so that providing a valid gateway token
-    is sufficient — no interactive pairing handshake is required.
+    Also removes any stale/invalid keys (e.g. pairingMode) that may have
+    been written by earlier add-on versions.
 
     Args:
         origins_csv: Comma-separated list of allowed origins.
@@ -196,24 +200,31 @@ def set_control_ui_origins(origins_csv: str):
     if "controlUi" not in gateway:
         gateway["controlUi"] = {}
 
+    control_ui = gateway["controlUi"]
     origins = [o.strip() for o in origins_csv.split(",") if o.strip()]
     changes = []
 
-    current_origins = gateway["controlUi"].get("allowedOrigins", [])
+    # --- allowedOrigins ---
+    current_origins = control_ui.get("allowedOrigins", [])
     if current_origins != origins:
-        gateway["controlUi"]["allowedOrigins"] = origins
+        control_ui["allowedOrigins"] = origins
         changes.append(f"allowedOrigins: {current_origins} -> {origins}")
 
-    # pairingMode: "open" means any client with a valid token can connect
-    # without an interactive pairing ceremony.  Other values ("pin", etc.)
-    # require the user to confirm on the host first.
-    current_pairing = gateway["controlUi"].get("pairingMode")
-    if current_pairing != "open":
-        gateway["controlUi"]["pairingMode"] = "open"
-        changes.append(f"pairingMode: {current_pairing} -> open")
+    # --- dangerouslyDisableDeviceAuth ---
+    # Skips the interactive pairing handshake (error 1008: pairing required).
+    # Token auth is still enforced; this only disables the per-device approval.
+    if control_ui.get("dangerouslyDisableDeviceAuth") is not True:
+        control_ui["dangerouslyDisableDeviceAuth"] = True
+        changes.append("dangerouslyDisableDeviceAuth: True")
+
+    # --- Remove invalid keys from earlier add-on versions ---
+    for stale_key in ("pairingMode",):
+        if stale_key in control_ui:
+            del control_ui[stale_key]
+            changes.append(f"removed invalid key: {stale_key}")
 
     if not changes:
-        print(f"INFO: controlUi settings already correct: origins={origins}, pairingMode=open")
+        print(f"INFO: controlUi already correct: origins={origins}, deviceAuth=disabled")
         return True
 
     if write_config(cfg):
@@ -233,7 +244,7 @@ def main():
     
     if cmd == "apply-gateway-settings":
         if len(sys.argv) != 8:
-            print("Usage: oc_config_helper.py apply-gateway-settings <local|remote> <auto|loopback|lan|tailnet> <port> <enable_openai_api:true|false> <auth_mode:token|trusted-proxy> <trusted_proxies_csv>")
+            print("Usage: oc_config_helper.py apply-gateway-settings <local|remote> <loopback|lan|tailnet> <port> <enable_openai_api:true|false> <auth_mode:token|trusted-proxy> <trusted_proxies_csv>")
             sys.exit(1)
         mode = sys.argv[2]
         bind_mode = sys.argv[3]
