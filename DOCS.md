@@ -667,6 +667,24 @@ Go to **Settings → Add-ons → OpenClaw Assistant → Log** tab. Logs show sta
 2. **External proxy**: Set `access_mode` to **lan_reverse_proxy** and configure NPM/Caddy/Traefik with TLS.
 3. **SSH tunnel** (desktop only): `ssh -L 18789:127.0.0.1:18789 user@ha-ip` then open `http://localhost:18789`.
 
+### "disconnected (1008): origin not allowed"
+
+**Symptom**: Gateway UI shows `origin not allowed (open the Control UI from the gateway host or allow it in gateway.controlUi.allowedOrigins)`.
+
+**Cause**: OpenClaw v2026.2.21+ checks the browser's `Origin` header against an allow-list. When using the built-in HTTPS proxy (`lan_https`), the origin (`https://<ip>:<port>`) must be registered in `gateway.controlUi.allowedOrigins`.
+
+**Fix**: In **v0.5.78+** this is configured automatically on startup. If you still see the error:
+1. Restart the add-on (the startup script detects the LAN IP and sets the origins).
+2. If the IP has changed since you last started, restart again — the cert and origins are regenerated.
+3. **Manual override** (from the add-on terminal):
+   ```sh
+   openclaw config set gateway.controlUi.allowedOrigins '["https://192.168.1.10:18789"]'
+   ```
+   Replace the IP and port with your actual values, then restart the gateway:
+   ```sh
+   openclaw gateway restart
+   ```
+
 ### Gateway UI shows "Unauthorized"
 
 **Fix**: Get the correct token and use it:

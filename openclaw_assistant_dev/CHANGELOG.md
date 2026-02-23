@@ -2,6 +2,11 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.79] - 2026-02-23
+
+### Fixed
+- **`lan_https` — error 1008 "origin not allowed"**: auto-configure `gateway.controlUi.allowedOrigins` with the HTTPS proxy origins (LAN IP, `homeassistant.local`, `homeassistant`) so the Control UI WebSocket is accepted.
+
 ## [0.5.78] - 2026-02-23
 
 ### Added

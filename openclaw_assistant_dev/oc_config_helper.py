@@ -170,6 +170,44 @@ def apply_gateway_settings(mode: str, bind_mode: str, port: int, enable_openai_a
         return True
 
 
+def set_control_ui_origins(origins_csv: str):
+    """
+    Set gateway.controlUi.allowedOrigins in the config.
+
+    OpenClaw v2026.2.21+ rejects WebSocket connections from origins not in
+    this list.  When the built-in HTTPS proxy is used (lan_https), the
+    browser's origin (e.g. https://192.168.1.10:18789) must be listed here.
+
+    Args:
+        origins_csv: Comma-separated list of allowed origins.
+                     Pass an empty string to clear / leave unset.
+    """
+    cfg = read_config()
+    if cfg is None:
+        cfg = {}
+
+    if "gateway" not in cfg:
+        cfg["gateway"] = {}
+    gateway = cfg["gateway"]
+
+    if "controlUi" not in gateway:
+        gateway["controlUi"] = {}
+
+    origins = [o.strip() for o in origins_csv.split(",") if o.strip()]
+
+    current = gateway["controlUi"].get("allowedOrigins", [])
+    if current == origins:
+        print(f"INFO: controlUi.allowedOrigins already correct: {origins}")
+        return True
+
+    gateway["controlUi"]["allowedOrigins"] = origins
+    if write_config(cfg):
+        print(f"INFO: Updated controlUi.allowedOrigins: {current} -> {origins}")
+        return True
+    print("ERROR: Failed to write config")
+    return False
+
+
 def main():
     """CLI entry point for use by run.sh"""
     if len(sys.argv) < 2:
@@ -201,6 +239,14 @@ def main():
             print(value)
         sys.exit(0)
     
+    elif cmd == "set-control-ui-origins":
+        if len(sys.argv) != 3:
+            print("Usage: oc_config_helper.py set-control-ui-origins <origins_csv>")
+            sys.exit(1)
+        origins_csv = sys.argv[2]
+        success = set_control_ui_origins(origins_csv)
+        sys.exit(0 if success else 1)
+
     elif cmd == "set":
         if len(sys.argv) != 4:
             print("Usage: oc_config_helper.py set <key> <value>")
