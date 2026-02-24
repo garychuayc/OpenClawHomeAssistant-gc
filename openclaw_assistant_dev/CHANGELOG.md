@@ -9,6 +9,10 @@ All notable changes to the OpenClaw Assistant Home Assistant Add-on will be docu
 - In `remote` mode the add-on no longer starts a local gateway service.
 - In `remote` mode the add-on now starts `openclaw node run` and connects to `gateway.remote.url` (supports `ws://` and `wss://`).
 
+### Added
+- New add-on option `gateway_remote_url` (UI field).
+- Add-on now writes `gateway.remote.url` in OpenClaw config from `gateway_remote_url` on startup.
+
 ## [0.5.85] - 2026-02-24
 
 - Bump OpenClaw to 2026.2.23.
