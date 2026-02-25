@@ -2,6 +2,7 @@
 
 Always reuse existing logic in `run.sh`, `oc_config_helper.py`, and `render_nginx.py`.
 Avoid duplicate implementations for config parsing, gateway patching, or template rendering.
+Respect guidelines in AGENTS.md
 
 ## Stack
 
