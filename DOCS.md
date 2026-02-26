@@ -187,6 +187,33 @@ Then open `https://openclaw.example.com`.
 
 > **Important**: Nabu Casa remote access only proxies port 8123. It does not expose custom add-on ports directly.
 
+### Method B2 — Reverse proxy in front of `lan_https` (token mode, LAN-only)
+
+This is a practical pattern when you want to keep add-on `access_mode: lan_https` (built-in HTTPS + token auth),
+but still use an internal reverse proxy hostname on LAN (for example `https://openclaw.example.lan`).
+
+**Add-on settings (known-good pattern):**
+
+```json
+{
+   "gateway_mode": "local",
+   "access_mode": "lan_https",
+   "gateway_auth_mode": "token",
+   "gateway_public_url": "https://openclaw.example.lan",
+   "gateway_additional_allowed_origins": "https://192.168.1.3:18789,https://openclaw.example.lan"
+}
+```
+
+Notes:
+- Keep `gateway_auth_mode: token` for this pattern (do **not** switch to `trusted-proxy` unless you explicitly need header-based auth).
+- `gateway_public_url` should be the final URL users open in browser (usually your reverse-proxy FQDN).
+- Include both direct and proxy origins in `gateway_additional_allowed_origins` when you use both paths.
+
+**Reverse proxy settings:**
+- Forward to `https://<HA-IP>:18789` (the add-on's built-in HTTPS endpoint).
+- Enable WebSocket support.
+- If your proxy validates upstream certs, import/trust the add-on CA certificate, or disable upstream verification for this internal hop.
+
 ### Method C — SSH port forwarding (secure, no config changes)
 
 Forward the gateway port from your HA host to your local machine:
@@ -225,7 +252,7 @@ Set `gateway_public_url` in the add-on configuration to the URL where the gatewa
 - External HTTPS: `https://openclaw.example.com`
 - Tailscale: `https://ha-machine.ts.net:18789`
 
-> **Tip**: In `lan_https` mode, if you leave `gateway_public_url` empty, the add-on auto-constructs it from the detected LAN IP.
+> **Tip**: In `lan_https` mode, if you leave `gateway_public_url` empty, the landing page auto-uses `https://<current-browser-host>:<gateway_port>` as a fallback.
 
 ### Browser security: "requires HTTPS or localhost"
 
@@ -270,7 +297,7 @@ All options are set via **Settings → Apps/Add-ons → OpenClaw Assistant → C
 | `gateway_bind_mode` | `loopback` / `lan` / `tailnet` | `loopback` | **loopback**: 127.0.0.1 only (secure). **lan**: all interfaces (LAN-accessible). **tailnet**: Tailscale interface only. Only applies when `gateway_mode` is `local` |
 | `gateway_port` | int | `18789` | Port for the gateway. Only applies when `gateway_mode` is `local` |
 | `access_mode` | `custom` / `local_only` / `lan_https` / `lan_reverse_proxy` / `tailnet_https` | `custom` | **Simplifies secure access setup.** `custom`: use individual settings (backward-compatible). `lan_https`: built-in HTTPS proxy for LAN (recommended for phones). `lan_reverse_proxy`: external reverse proxy. `tailnet_https`: Tailscale. `local_only`: Ingress only. See [Accessing the Gateway Web UI](#4-accessing-the-gateway-web-ui) |
-| `gateway_public_url` | string | _(empty)_ | Public URL for the "Open Gateway Web UI" button. Auto-constructed in `lan_https` mode if empty. Example: `https://192.168.1.119:18789`. In newer versions this origin is also merged into `gateway.controlUi.allowedOrigins` to reduce reverse-proxy origin errors. |
+| `gateway_public_url` | string | _(empty)_ | Public URL for the "Open Gateway Web UI" button. If empty in `lan_https` mode, the landing page falls back to `https://<current-browser-host>:<gateway_port>`. Example: `https://192.168.1.119:18789`. In newer versions this origin is also merged into `gateway.controlUi.allowedOrigins` to reduce reverse-proxy origin errors. |
 | `enable_openai_api` | bool | `false` | Enable the OpenAI-compatible `/v1/chat/completions` endpoint. Required for [Assist pipeline integration](#6c-assist-pipeline-integration-openai-api) |
 | `gateway_auth_mode` | `token` / `trusted-proxy` | `token` | Gateway auth mode. Use `trusted-proxy` when terminating HTTPS in a reverse proxy and forwarding trusted auth headers. |
 | `gateway_trusted_proxies` | string | _(empty)_ | Comma-separated trusted proxy IP/CIDR list used with `gateway_auth_mode: trusted-proxy`. |

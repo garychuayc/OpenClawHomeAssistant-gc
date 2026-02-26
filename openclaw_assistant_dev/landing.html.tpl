@@ -70,7 +70,7 @@
 
     <!-- ==================== ACTION BUTTONS ==================== -->
     <div class="row" style="margin-bottom:6px">
-      <a class="btn" id="gwbtn" href="__GATEWAY_PUBLIC_URL____GW_PUBLIC_URL_PATH__?token=__GATEWAY_TOKEN__" target="_blank" rel="noopener noreferrer">Open Gateway Web UI</a>
+      <a class="btn" id="gwbtn" href="#" target="_blank" rel="noopener noreferrer">Open Gateway Web UI</a>
       <a class="btn secondary" href="./terminal/" target="_self">Open Terminal (full page)</a>
       <a class="btn green hidden" id="certBtn" href="" target="_blank" rel="noopener noreferrer">Download CA Certificate</a>
     </div>
@@ -164,6 +164,22 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
 
     const $ = id => document.getElementById(id);
 
+    // ---------- Gateway URL resolution ----------
+    // If gateway_public_url is not set, derive a safe lan_https fallback from the
+    // browser hostname (avoids container bridge IPs like 172.x in standalone Docker).
+    const fallbackGwBase = (ACCESS_MODE === 'lan_https' && HTTPS_PORT)
+      ? `https://${window.location.hostname}:${HTTPS_PORT}`
+      : '';
+    const gatewayBaseUrl = (GW_PUBLIC_URL || fallbackGwBase).replace(/\/$/, '');
+
+    const gwBtn = $('gwbtn');
+    if (gatewayBaseUrl) {
+      const tokenQuery = GW_TOKEN ? `?token=${encodeURIComponent(GW_TOKEN)}` : '';
+      gwBtn.href = `${gatewayBaseUrl}/${tokenQuery}`;
+    } else {
+      gwBtn.href = '#';
+    }
+
     // ---------- Secure context detection ----------
     const isSecure = window.isSecureContext;
     const secureBadge = $('secureBadge');
@@ -182,17 +198,25 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
     (async function checkGateway() {
       const statusEl = $('statusGateway');
       try {
-        const url = GW_PUBLIC_URL
-          ? GW_PUBLIC_URL.replace(/\/$/, '') + '/api/health'
+        const url = gatewayBaseUrl
+          ? `${gatewayBaseUrl}/api/health`
           : '/api/health'; // fallback to relative (only works if proxied)
         const r = await fetch(url, { mode: 'no-cors', cache: 'no-store' }).catch(() => null);
         if (r && (r.ok || r.type === 'opaque')) {
           statusEl.innerHTML = '<span class="icon">✅</span><span>Gateway: <b>running</b></span>';
         } else {
-          statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>unreachable</b> (may still be starting)</span>';
+          if (ACCESS_MODE === 'lan_https' && !GW_PUBLIC_URL) {
+            statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>status unknown</b> (open HTTPS URL once and trust cert)</span>';
+          } else {
+            statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>unreachable</b> (may still be starting)</span>';
+          }
         }
       } catch {
-        statusEl.innerHTML = '<span class="icon">❌</span><span>Gateway: <b>unreachable</b></span>';
+        if (ACCESS_MODE === 'lan_https' && !GW_PUBLIC_URL) {
+          statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>status unknown</b> (open HTTPS URL once and trust cert)</span>';
+        } else {
+          statusEl.innerHTML = '<span class="icon">❌</span><span>Gateway: <b>unreachable</b></span>';
+        }
       }
     })();
 

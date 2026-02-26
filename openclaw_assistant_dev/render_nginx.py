@@ -10,7 +10,6 @@ Called by run.sh with the following env vars:
 """
 
 import os
-import subprocess
 from pathlib import Path
 
 
@@ -95,16 +94,10 @@ def main():
     Path('/etc/nginx/nginx.conf').write_text(conf)
 
     # ── landing page ────────────────────────────────────────────
-    # If lan_https and no explicit public URL, auto-construct one
-    if enable_https and not public_url:
-        try:
-            lan_ip = subprocess.check_output(
-                ['hostname', '-I'], text=True, timeout=2
-            ).split()[0]
-        except Exception:
-            lan_ip = '127.0.0.1'
-        public_url = f'https://{lan_ip}:{https_port}'
-        gw_path = '/'
+    # Keep GW_PUBLIC_URL empty when user does not set it.
+    # The landing page will derive a browser-side fallback URL from
+    # window.location.hostname for lan_https mode. This avoids showing
+    # Docker bridge/container IPs (e.g. 172.x) in standalone deployments.
 
     landing = landing_tpl.replace('__GATEWAY_TOKEN__', token)
     landing = landing.replace('__GATEWAY_PUBLIC_URL__', public_url)

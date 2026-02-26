@@ -2,6 +2,15 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.92] - 2026-02-26
+
+### Fixed
+- `lan_https` landing page no longer auto-builds the Gateway URL from container network IPs (e.g. `172.x`) when `gateway_public_url` is empty. It now falls back to `https://<current-browser-host>:<gateway_port>`.
+- Reduced false `Gateway unreachable` status on the ingress page for `lan_https` fallback mode (shows `status unknown` guidance until HTTPS cert trust is established).
+
+### Changed
+- Documentation now includes a tested LAN-only reverse-proxy pattern that keeps `access_mode: lan_https` with `gateway_auth_mode: token` and uses `gateway_additional_allowed_origins` for both direct IP and proxy FQDN origins.
+
 ## [0.5.91] - 2026-02-25
 
 - Bump OpenClaw to 2026.2.24.
