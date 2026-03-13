@@ -2,6 +2,13 @@
 
 All notable changes to the OpenClaw Assistant Home Assistant Add-on will be documented in this file.
 
+## [0.5.95] - 2026-03-13
+
+## Fixed
+Gateway restart loop (issue #95): openclaw gateway run is a thin wrapper that spawns openclaw-gateway as a long-running daemon then exits. The supervisor had two bugs: (1) pgrep pattern "openclaw.*(gateway|node).*run" never matched the daemon name openclaw-gateway, so self-restarts were never detected; (2) after re-tracking a self-restarted PID, wait failed with "pid N is not a child of this shell" (exit 127) because the new daemon was spawned by the old one, not by run.sh. The supervisor loop now uses pgrep -f "openclaw-gateway" for reliable daemon detection and switches to kill -0 polling for non-child PIDs instead of wait. The loopback relay (tailnet mode) is also stopped/restarted around supervisor-initiated gateway restarts to prevent port conflicts.
+
+Session lock cleanup ignored non-default agents: cleanup_session_locks was hardcoded to agents/main/sessions, skipping stale locks for any agent with a custom forcedAgentId. Stale locks could block the gateway from opening sessions for those agents, causing silent fallback to main. Cleanup now scans all agents/*/sessions/ directories.
+
 ## [0.5.93] - 2026-03-01
 
 - Bump OpenClaw to 2026.2.26.

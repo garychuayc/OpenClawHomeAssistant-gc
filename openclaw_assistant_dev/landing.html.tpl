@@ -70,7 +70,7 @@
 
     <!-- ==================== ACTION BUTTONS ==================== -->
     <div class="row" style="margin-bottom:6px">
-      <a class="btn" id="gwbtn" href="#" target="_blank" rel="noopener noreferrer">Open Gateway Web UI</a>
+      <a class="btn" id="gwbtn" href="__GATEWAY_PUBLIC_URL____GW_PUBLIC_URL_PATH__?token=__GATEWAY_TOKEN__" target="_blank" rel="noopener noreferrer">Open Gateway Web UI</a>
       <a class="btn secondary" href="./terminal/" target="_self">Open Terminal (full page)</a>
       <a class="btn green hidden" id="certBtn" href="" target="_blank" rel="noopener noreferrer">Download CA Certificate</a>
     </div>
@@ -116,6 +116,31 @@
     </details>
 
     <!-- ==================== PROXY RECIPES ==================== -->
+    <details>
+      <summary>MCP setup (Home Assistant control)</summary>
+      <div style="margin-top:8px;font-size:13px;color:#9ca3af;line-height:1.7">
+        <p><b>MCP (Model Context Protocol)</b> lets OpenClaw control Home Assistant entities, services, and automations directly.</p>
+
+        <b>Automatic (recommended)</b>
+        <ol style="margin:4px 0;padding-left:22px;line-height:1.8">
+          <li>Create a <b>Long-Lived Access Token</b> in HA: click your profile avatar → scroll to <b>Long-Lived Access Tokens</b> → <b>Create Token</b></li>
+          <li>Paste it into add-on option <code>homeassistant_token</code> in <b>Settings → Add-ons → Configuration</b></li>
+          <li>Set <code>auto_configure_mcp</code> to <b>ON</b> in add-on Configuration</li>
+          <li>Restart the add-on — MCP is configured automatically</li>
+        </ol>
+
+        <b>Manual (terminal)</b>
+        <pre style="background:#0b1220;padding:8px;border-radius:6px;overflow-x:auto;font-size:12px">mcporter config add HA "http://localhost:8123/api/mcp" \
+  --header "Authorization=Bearer YOUR_LONG_LIVED_TOKEN" \
+  --scope home</pre>
+
+        <b>After upgrades</b> — if OpenClaw has stale HA data:
+        <pre style="background:#0b1220;padding:8px;border-radius:6px;overflow-x:auto;font-size:12px">mcporter call home-assistant.GetLiveContext</pre>
+
+        <p><b>Tip:</b> The first MCP session needs a capable model (Gemini 3.1 Pro, Claude Sonnet 4, GPT-4.1). After setup, cheaper models work fine.</p>
+      </div>
+    </details>
+
     <details>
       <summary>Reverse-proxy recipes (NPM / Caddy / Traefik / Tailscale)</summary>
       <div style="margin-top:8px;font-size:13px;color:#9ca3af;line-height:1.7">
@@ -164,22 +189,6 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
 
     const $ = id => document.getElementById(id);
 
-    // ---------- Gateway URL resolution ----------
-    // If gateway_public_url is not set, derive a safe lan_https fallback from the
-    // browser hostname (avoids container bridge IPs like 172.x in standalone Docker).
-    const fallbackGwBase = (ACCESS_MODE === 'lan_https' && HTTPS_PORT)
-      ? `https://${window.location.hostname}:${HTTPS_PORT}`
-      : '';
-    const gatewayBaseUrl = (GW_PUBLIC_URL || fallbackGwBase).replace(/\/$/, '');
-
-    const gwBtn = $('gwbtn');
-    if (gatewayBaseUrl) {
-      const tokenQuery = GW_TOKEN ? `?token=${encodeURIComponent(GW_TOKEN)}` : '';
-      gwBtn.href = `${gatewayBaseUrl}/${tokenQuery}`;
-    } else {
-      gwBtn.href = '#';
-    }
-
     // ---------- Secure context detection ----------
     const isSecure = window.isSecureContext;
     const secureBadge = $('secureBadge');
@@ -198,25 +207,17 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
     (async function checkGateway() {
       const statusEl = $('statusGateway');
       try {
-        const url = gatewayBaseUrl
-          ? `${gatewayBaseUrl}/api/health`
+        const url = GW_PUBLIC_URL
+          ? GW_PUBLIC_URL.replace(/\/$/, '') + '/api/health'
           : '/api/health'; // fallback to relative (only works if proxied)
         const r = await fetch(url, { mode: 'no-cors', cache: 'no-store' }).catch(() => null);
         if (r && (r.ok || r.type === 'opaque')) {
           statusEl.innerHTML = '<span class="icon">✅</span><span>Gateway: <b>running</b></span>';
         } else {
-          if (ACCESS_MODE === 'lan_https' && !GW_PUBLIC_URL) {
-            statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>status unknown</b> (open HTTPS URL once and trust cert)</span>';
-          } else {
-            statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>unreachable</b> (may still be starting)</span>';
-          }
+          statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>unreachable</b> (may still be starting)</span>';
         }
       } catch {
-        if (ACCESS_MODE === 'lan_https' && !GW_PUBLIC_URL) {
-          statusEl.innerHTML = '<span class="icon">⚠️</span><span>Gateway: <b>status unknown</b> (open HTTPS URL once and trust cert)</span>';
-        } else {
-          statusEl.innerHTML = '<span class="icon">❌</span><span>Gateway: <b>unreachable</b></span>';
-        }
+        statusEl.innerHTML = '<span class="icon">❌</span><span>Gateway: <b>unreachable</b></span>';
       }
     })();
 
@@ -235,7 +236,7 @@ SSL tab:  Request a new SSL certificate (Let's Encrypt or custom)</pre>
       'pairing required': {
         friendly: 'The Gateway requires device pairing before the Control UI can connect.',
         fix: ACCESS_MODE === 'lan_https'
-          ? 'Restart the add-on — it auto-sets <code>controlUi.dangerouslyDisableDeviceAuth: true</code> to skip pairing (token auth is still enforced). <br><small>Note: v2026.2.22+ shows an <em>expected</em> security warning for this flag in the gateway logs — it is safe to ignore.</small>'
+          ? 'Restart the add-on — by default it sets <code>controlUi.dangerouslyDisableDeviceAuth: true</code> to skip pairing (token auth is still enforced). You can change this via <code>controlui_disable_device_auth</code> in add-on options. <br><small>Note: v2026.2.22+ shows an <em>expected</em> security warning for this flag in the gateway logs — it is safe to ignore.</small>'
           : 'Set <code>access_mode</code> to <b>lan_https</b> and restart. Or from the terminal: edit <code>/config/.openclaw/openclaw.json</code> and set <code>gateway.controlUi.dangerouslyDisableDeviceAuth: true</code>, then restart the gateway.'
       },
       'origin not allowed': {
