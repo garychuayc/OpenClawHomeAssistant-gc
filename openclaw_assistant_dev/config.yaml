@@ -1,6 +1,6 @@
-name: OpenClaw Assistant (DEV)
+name: OpenClaw Assistant (Public)
 version: "0.5.97"
-slug: openclaw_assistant_dev
+slug: openclaw_assistant_public
 description: Run OpenClaw Assistant (OpenClaw-compatible) as a Home Assistant add-on.
 url: https://github.com/techartdev/OpenClawHomeAssistant
 arch:
