@@ -16,7 +16,7 @@ host_network: true
 
 # Home Assistant Ingress (UI inside the add-on page)
 ingress: true
-ingress_port: 48099
+ingress_port: 48100
 panel_title: OpenClaw Assistant
 panel_icon: mdi:robot
 
@@ -35,7 +35,7 @@ options:
 
   # Public base URL for opening the Gateway Web UI in a new tab (not embedded).
   # Recommended: NO trailing slash.
-  # Example: "https://example.duckdns.org:12345" or "http://192.168.1.10:18789"
+  # Example: "https://example.duckdns.org:12345" or "http://192.168.1.10:"
   gateway_public_url: ""
 
   # Optional: Home Assistant long-lived token (for local HA API scripts/tools)
@@ -74,7 +74,7 @@ options:
   gateway_bind_mode: loopback
 
   # Gateway port to listen on
-  gateway_port: 18789
+  gateway_port: 18790
 
   # Access mode preset — simplifies secure access configuration.
   # custom: use individual gateway_bind_mode / auth_mode settings (backward compatible)
