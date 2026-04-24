@@ -49,7 +49,7 @@ CLEAN_LOCKS_ON_EXIT=$(jq -r '.clean_session_locks_on_exit // true' "$OPTIONS_FIL
 GATEWAY_MODE=$(jq -r '.gateway_mode // "local"' "$OPTIONS_FILE")
 GATEWAY_REMOTE_URL=$(jq -r '.gateway_remote_url // empty' "$OPTIONS_FILE")
 GATEWAY_BIND_MODE=$(jq -r '.gateway_bind_mode // "loopback"' "$OPTIONS_FILE")
-GATEWAY_PORT=$(jq -r '.gateway_port // 18789' "$OPTIONS_FILE")
+GATEWAY_PORT=$(jq -r '.gateway_port // 18790' "$OPTIONS_FILE")
 ENABLE_OPENAI_API=$(jq -r '.enable_openai_api // false' "$OPTIONS_FILE")
 GATEWAY_AUTH_MODE=$(jq -r '.gateway_auth_mode // "token"' "$OPTIONS_FILE")
 GATEWAY_TRUSTED_PROXIES=$(jq -r '.gateway_trusted_proxies // empty' "$OPTIONS_FILE")
@@ -529,7 +529,7 @@ cfg_path.parent.mkdir(parents=True, exist_ok=True)
 cfg = {
   "gateway": {
     "mode": "local",
-    "port": 18789,
+    "port": 18790,
     "bind": "loopback",
     "auth": {
       "mode": "token",
@@ -779,7 +779,7 @@ start_openclaw_runtime() {
     REMOTE_URL="$GATEWAY_REMOTE_URL"
     if [ -z "$REMOTE_URL" ]; then
       echo "ERROR: gateway_mode=remote but gateway_remote_url is not set in add-on options"
-      echo "ERROR: Set gateway_remote_url in add-on Configuration (e.g. ws://192.168.1.10:18789), then restart"
+      echo "ERROR: Set gateway_remote_url in add-on Configuration (e.g. ws://192.168.1.10:18790), then restart"
       return 1
     fi
 
@@ -969,14 +969,14 @@ if [ -f "$NGINX_PID_FILE" ]; then
   fi
   rm -f "$NGINX_PID_FILE"
 fi
-# Also kill any orphaned nginx workers that might hold port 48099
+# Also kill any orphaned nginx workers that might hold port 48100
 if command -v pkill >/dev/null 2>&1; then
   pkill -f "nginx.*-c /etc/nginx/nginx.conf" 2>/dev/null || true
   sleep 1
 fi
-# Verify port 48099 is actually free before proceeding
-if command -v ss >/dev/null 2>&1 && ss -tlnp 2>/dev/null | grep -q ':48099 '; then
-  echo "WARN: Port 48099 still in use after cleanup; nginx may fail to start"
+# Verify port 48100 is actually free before proceeding
+if command -v ss >/dev/null 2>&1 && ss -tlnp 2>/dev/null | grep -q ':48100 '; then
+  echo "WARN: Port 48100 still in use after cleanup; nginx may fail to start"
 fi
 
 # ------------------------------------------------------------------------------
@@ -1035,7 +1035,7 @@ print(json.load(open(p)).get('gateway',{}).get('auth',{}).get('token',''), end='
 # Initial render (token may be absent if openclaw.json does not exist yet)
 render_landing startup
 
-echo "Starting ingress proxy (nginx) on :48099 ..."
+echo "Starting ingress proxy (nginx) on :48100 ..."
 nginx -g 'daemon off;' &
 NGINX_PID=$!
 sleep 1
